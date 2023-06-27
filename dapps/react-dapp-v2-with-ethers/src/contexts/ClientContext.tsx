@@ -17,6 +17,9 @@ import Client from "@walletconnect/sign-client";
 import { DEFAULT_LOGGER, DEFAULT_PROJECT_ID, DEFAULT_RELAY_URL } from "../constants";
 import { providers, utils } from "ethers";
 import { AccountBalances, ChainNamespaces, getAllChainNamespaces } from "../helpers";
+
+import EthereumProvider, {EthereumProvider as WalletEthereumProvider} from "@walletconnect/ethereum-provider";
+
 /**
  * Types
  */
@@ -51,7 +54,7 @@ export function ClientContextProvider({ children }: { children: ReactNode | Reac
   const [pairings, setPairings] = useState<PairingTypes.Struct[]>([]);
   const [session, setSession] = useState<SessionTypes.Struct>();
 
-  const [ethereumProvider, setEthereumProvider] = useState<UniversalProvider>();
+  const [ethereumProvider, setEthereumProvider] = useState<EthereumProvider>();
   const [web3Provider, setWeb3Provider] = useState<providers.Web3Provider>();
 
   const [isFetchingBalances, setIsFetchingBalances] = useState(false);
@@ -147,10 +150,12 @@ export function ClientContextProvider({ children }: { children: ReactNode | Reac
 
       if (!DEFAULT_PROJECT_ID) return;
 
-      const provider = await UniversalProvider.init({
+      const provider = await WalletEthereumProvider.init({
         projectId: DEFAULT_PROJECT_ID,
-        logger: DEFAULT_LOGGER,
+        // logger: DEFAULT_LOGGER,
+          chains: [1],
         relayUrl: DEFAULT_RELAY_URL,
+          showQrModal: false,
       });
 
       const web3Modal = new Web3Modal({
@@ -168,7 +173,7 @@ export function ClientContextProvider({ children }: { children: ReactNode | Reac
     }
   }, []);
 
-  const createWeb3Provider = useCallback((ethereumProvider: UniversalProvider) => {
+  const createWeb3Provider = useCallback((ethereumProvider: EthereumProvider) => {
     const web3Provider = new providers.Web3Provider(ethereumProvider);
     setWeb3Provider(web3Provider);
   }, []);
@@ -184,21 +189,7 @@ export function ClientContextProvider({ children }: { children: ReactNode | Reac
       console.log("Enabling EthereumProvider for chainId: ", chainId);
 
       const session = await ethereumProvider.connect({
-        namespaces: {
-          eip155: {
-            methods: [
-              "eth_sendTransaction",
-              "eth_signTransaction",
-              "eth_sign",
-              "personal_sign",
-              "eth_signTypedData",
-            ],
-            chains: [`eip155:${chainId}`],
-            events: ["chainChanged", "accountsChanged"],
-            rpcMap: {chainId: `https://rpc.walletconnect.com?chainId=eip155:${chainId}&projectId=${DEFAULT_PROJECT_ID}`,},
-          },
-        },
-        pairingTopic: pairing?.topic,
+          chains: [1],
       });
 
       createWeb3Provider(ethereumProvider);
@@ -240,10 +231,10 @@ export function ClientContextProvider({ children }: { children: ReactNode | Reac
       if (typeof provider === "undefined") {
         throw new Error("WalletConnect is not initialized");
       }
-      const pairings = provider.client.pairing.getAll({ active: true });
-      // populates existing pairings to state
-      setPairings(pairings);
-      console.log("RESTORED PAIRINGS: ", pairings);
+      // const pairings = provider.client.pairing.getAll({ active: true });
+      // // populates existing pairings to state
+      // setPairings(pairings);
+      // console.log("RESTORED PAIRINGS: ", pairings);
       if (typeof session !== "undefined") return;
       // populates (the last) existing session to state
       if (ethereumProvider?.session) {

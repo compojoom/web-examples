@@ -218,6 +218,13 @@ const Home: NextPage = () => {
     };
   };
 
+  const switchNetwork = async (chainId: number) => {
+    if (!web3Provider) {
+      throw new Error("web3Provider not connected");
+    }
+
+    await web3Provider.send("wallet_switchEthereumChain", [{ chainId: Number(chainId).toString(16) }]);
+  }
   const getEthereumActions = (): AccountAction[] => {
     const wrapRpcRequest = (rpcRequest: () => Promise<IFormattedRpcResponse>) => async () => {
       openRequestModal();
@@ -239,6 +246,9 @@ const Home: NextPage = () => {
       { method: "personal_sign", callback: wrapRpcRequest(testSignMessage) },
       { method: "eth_sign (standard)", callback: wrapRpcRequest(testEthSign) },
       { method: "eth_signTypedData", callback: wrapRpcRequest(testSignTypedData) },
+      { method: "wallet_switchEthereumChain", callback: () => wrapRpcRequest(switchNetwork(1)) },
+      { method: "wallet_switchEthereumChain", callback: () => wrapRpcRequest(switchNetwork(10)) },
+      { method: "wallet_switchEthereumChain", callback: () => wrapRpcRequest(switchNetwork(42161)) },
     ];
   };
 
